@@ -8,16 +8,20 @@ body {
   align-items: center;
 }
 
+body .container {
+  position: relative;
+}
+
 .page .container {
   display: flex;
   align-self: center;
   height: 600px;
   width: 1000px;
+  position: relative;
 }
 
-#chart-container {
+.page .container  #chart-container {
+  display: flex;
+  position: relative;
 }
 
-#tooltip {}
-
-.data-point

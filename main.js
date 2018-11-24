@@ -1,13 +1,13 @@
 (function() {
-  'use strict';
+'use strict';
 
 const URL = 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json';
 
 const chart = "#chart-container";
 
-const W = 1000;
-const H = 600;
-const PADDING = 25;
+const W = 800;
+const H = 500;
+const PADDING = 20;
 
 getChartData();
 
@@ -22,6 +22,68 @@ function getChartData() {
   }
 }
 
+function getTooltipPosition(coords) {
+  let posObj = { };
+
+  if (coords[0] + 160 > W) {
+    posObj.rectX = coords[0] - 160;
+    posObj.textX = coords[0] - 150;
+  } else {
+    posObj.rectX = coords[0] + 10;
+    posObj.textX = coords[0] + 20;
+  }
+
+  if (coords[1] - 85 < 0) {
+    posObj.rectY = coords[1] + 10;
+    posObj.dateTextY = coords[1] + 35;
+    posObj.gdpTextY = coords[1] + 65;
+  } else {
+    posObj.rectY = coords[1] - 85;
+    posObj.dateTextY = coords[1] - 60;
+    posObj.gdpTextY = coords[1] - 30;
+  }
+  //console.log(posObj.rectX, posObj.rectY);
+  return posObj;
+}
+
+function getFinancialQuarter(date) {
+  let month = date.split("-");
+  let year = month[0];
+  let monthNum = +month[1];
+  switch (monthNum) {
+    case 1:
+      return `Q1 ${year}`
+    case 4:
+      return `Q2 ${year}`
+    case 7:
+      return `Q3 ${year}`
+    case 10:
+      return `Q4 ${year}`
+  }
+}
+
+function prettyfyGDP(val) {
+  let stringInt = val.toFixed(1).split(".")[0];
+  let stringArr = val.toFixed(1).split("");
+  let stringIntArr = stringInt.split("");
+  let prettyfied;
+  if (stringInt.length > 3) {
+    if (stringInt.length < 5) {
+      stringArr.splice(1, 0, ",");
+      prettyfied = `$${stringArr.join("")} Billion`;
+    } else if (stringInt.length < 6) {
+      stringArr.splice(2, 0, ",");
+      prettyfied = `$${stringArr.join("")} Billion`
+    } else if (stringInt.length < 7) {
+      stringArr.splice(3, 0, ",");
+      prettyfied = `$${stringArr.join("")} Billion`
+    }
+    return prettyfied;
+  } else {
+    return `$${val.toFixed(1)} Billion`;
+  }
+}
+
 function generateChart(chartData) {
   const dataset = chartData.data;
 
@@ -30,14 +92,14 @@ function generateChart(chartData) {
 
   const xScale = d3.scaleTime()
                   .domain([startDate, endDate])
-                  .range([PADDING, W - PADDING])
-                  .nice();
+                  .range([PADDING, W - PADDING]);
+                  //.nice();
 
   const yScale = d3.scaleLinear()
                   .domain([0, d3.max(dataset, (d) => d[1])])
                   //.range([H - PADDING, PADDING * 2]) // ([H - PADDING, PADDING])?
-                  .range([H - PADDING, PADDING])
-                  .nice();
+                  .range([H - PADDING, PADDING]);
+                  //.nice();
 
   const svg = d3.select(chart)
                 .append('svg')
@@ -49,19 +111,13 @@ function generateChart(chartData) {
 
   svg.append("g")
     .attr("id", "x-axis")
-    .attr("transform", `translate(0, ${H - PADDING})`) // translate(${PADDING}, ${H})?
+    .attr("transform", `translate(${0}, ${H - PADDING})`) // translate(${PADDING}, ${H})?
     .call(xAxis);
 
   svg.append("g")
     .attr("id", "y-axis")
-    .attr("transform", `translate(0, ${0 - PADDING})`)
+    .attr("transform", `translate(${PADDING}, ${0})`)
     .call(yAxis);
-
-  const tooltip = d3.select(chart)
-      .append("div")
-      .attr("id", "tooltip")
-      .style("opacity", 0);
-  
 
   svg.selectAll("rect")
     .data(dataset)
@@ -71,23 +127,52 @@ function generateChart(chartData) {
       .attr("data-date", (d) => d[0])
       .attr("data-gdp", (d) => d[1])
       .attr("x", (d) => xScale(new Date(d[0])))
-      .attr("y", (d) => yScale(d[1]) - PADDING) // Shouldn't it just be yScale(d[1])?
-      .attr("width", ((W - PADDING * 2) / dataset.length) * .5)
-      .attr("height", (d) => H - yScale(d[1]) - PADDING)
-      .attr("fill", "purple")
-      .on("mouseover", function(d) {
-        tooltip.transition()
-          .duration(0)
-          .style("opacity", 1)
-          .style("background", "pink")
-          .text(d[0] + " " + d[1]);
-        tooltip.attr("data-date", d[0]);
+      .attr("y", (d) => yScale(d[1]))
+      .attr("width", (W - PADDING) / dataset.length)
+      .attr("height", (d) => (H - PADDING) - yScale(d[1]))
+      .attr("fill", "slategray")
+      .on("mouseenter", function(d, i) {
+        let coords = getTooltipPosition(d3.mouse(this));
+        
+        d3.select(this)
+          .attr("fill", "crimson");
+
+        svg.append("g")
+          .attr("id", "tooltip")
+          .attr("data-date", d[0])
+          .attr("x", (d, i) => coords.rectX)
+          .attr("y", (d, i) => coords.rectY);
+            
+        d3.select("#tooltip")
+          .append("rect")
+            .attr("x", (d, i) => coords.rectX)
+            .attr("y", (d, i) => coords.rectY)
+            .attr("width", 150)
+            .attr("height", 75)
+            .attr("rx", 10)
+            .attr("ry", 10)
+            .attr("fill", "rgba(0, 0, 0, .7)");
+
+        d3.select("#tooltip")
+          .append("text")
+            .attr("x", coords.textX)
+            .attr("y", coords.dateTextY)
+            .attr("fill", "white")
+            .text(getFinancialQuarter(d[0]));
+
+        d3.select("#tooltip")
+          .append("text")
+            .attr("x", coords.textX)
+            .attr("y", coords.gdpTextY)
+            .attr("fill", "white")
+            .text(prettyfyGDP(d[1]));
       })
-      .on("mouseout",  function(d) {
-        tooltip.transition()
-          .duration(0)
-          .style("opacity", 0)
-      })
+      .on("mouseleave",  function(d, i) {
+        d3.select(this)
+          .attr("fill", "slategray")
+        let tooltip = svg.select("#tooltip");
+        tooltip.remove();
+      });
 
 }
 
