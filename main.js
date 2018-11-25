@@ -7,7 +7,7 @@ const chart = "#chart-container";
 
 const W = 800;
 const H = 500;
-const PADDING = 20;
+const PADDING = 50;
 
 getChartData();
 
@@ -42,7 +42,7 @@ function getTooltipPosition(coords) {
     posObj.dateTextY = coords[1] - 60;
     posObj.gdpTextY = coords[1] - 30;
   }
-  //console.log(posObj.rectX, posObj.rectY);
+
   return posObj;
 }
 
@@ -65,7 +65,7 @@ function getFinancialQuarter(date) {
 function prettyfyGDP(val) {
   let stringInt = val.toFixed(1).split(".")[0];
   let stringArr = val.toFixed(1).split("");
-  let stringIntArr = stringInt.split("");
+  
   let prettyfied;
   if (stringInt.length > 3) {
     if (stringInt.length < 5) {
@@ -93,13 +93,10 @@ function generateChart(chartData) {
   const xScale = d3.scaleTime()
                   .domain([startDate, endDate])
                   .range([PADDING, W - PADDING]);
-                  //.nice();
 
   const yScale = d3.scaleLinear()
                   .domain([0, d3.max(dataset, (d) => d[1])])
-                  //.range([H - PADDING, PADDING * 2]) // ([H - PADDING, PADDING])?
                   .range([H - PADDING, PADDING]);
-                  //.nice();
 
   const svg = d3.select(chart)
                 .append('svg')
@@ -111,7 +108,7 @@ function generateChart(chartData) {
 
   svg.append("g")
     .attr("id", "x-axis")
-    .attr("transform", `translate(${0}, ${H - PADDING})`) // translate(${PADDING}, ${H})?
+    .attr("transform", `translate(${0}, ${H - PADDING})`)
     .call(xAxis);
 
   svg.append("g")
